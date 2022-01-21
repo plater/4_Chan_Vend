@@ -913,17 +913,28 @@ setp3:		movlw	price3
 setp2:		movlw	price2
 		bra	setprice
 setp1:		movlw	price1
-setprice:	movwf	EEADR
-		call	eeread
-		movff	EEDATA,vendcost
-		
+setprice:	movwf	credit
+		movwf	EEADR
+		clrf    vendcost
+;		movff	EEDATA,vendcost
 		call	delay.2s
 		call	displayprice
-setprice1:	call	butin
-		btfsc	buttons,0
+		movff	credit,EEADR
+setprice1:	clrf	credit
+		call	butin
+		btfsc	buttons,3	    ;Check button 4
+		bra	setpexit
+		btfsc	PORTA, 5	    ;Check for note in
+		bra	setprice1
+		call	notein
+		movf    vendcost,0
+		movf	credit,0
+		addwf	vendcost,1	    ;Increment credit store.
+		movf	vendcost,0
+		movff	vendcost,EEDATA
+		movf	vendcost,0
 		call	decprice
-		btfsc	buttons, 1
-		call	incprice
+		call	butin
 		btfss	buttons,3
 		bra	setprice1
 		call	delay.5s
@@ -934,20 +945,6 @@ setpexit:	call	butin
 		bra	priceset
 
 decprice:	call	delay.2s
-		call	butin
-		tstfsz	buttons
-		bra	decprice
-		decf	EEDATA
-		call	eewrite
-		movff	EEDATA,vendcost
-		call	displayprice
-		return
-
-incprice:	call	delay.2s
-		call	butin
-		tstfsz	buttons
-		bra	incprice
-		incf	EEDATA
 		call	eewrite
 		movff	EEDATA,vendcost
 		call	displayprice
