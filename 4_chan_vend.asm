@@ -88,8 +88,8 @@
 ; Data to be programmed into the Data EEPROM is defined here
 
 		ORG	0xf00000
-		data	0x0505		;Price2 - Price1
-		data	0x0505		;Price4 - Price3
+		data	0x1E1E		;Price2 - Price1
+		data	0x3232		;Price4 - Price3
 		data	0x0105		;Coin pulse - Hopper coin value
 		data	0x0000		;Coins in byte 0 - Venderr
 		data	0x0000		;Coins in byte 2 - Coins in byte 1
@@ -234,7 +234,7 @@ presnc	macro
 
 		ORG	0x0000
 
-u		goto	Main		;go to start of main code
+		goto	Main		;go to start of main code
 
 ;******************************************************************************
 ;High priority interrupt vector
@@ -312,8 +312,8 @@ vendloop:	call	pricecheck	    ;See if there's cash for vend.
 		bra	Maincoine
 venloop:	movff	credit,WREG
 		call	maxpriceck
-		btfss	PORTA, 4	    ;Check for coin in
-		call	coinin		    ;Check for coins or notes
+		btfss	PORTA, 5	    ;Check for coin in
+		call	notein		    ;Check for notes
 		call	togdisplayv	    ;Alternate between nochange and credit display
 		btfsc	vendflags,3	    ;bit 3=nochange
 		call	displnochange
@@ -479,7 +479,7 @@ startvend:	bcf	LATC,7		    ;Turn off coin & note reader
 		bra	sensorerr	    ;Sensor blocked
 		movff	motors, PORTC	    ;Start to vend
 		call	delay.1s	    ;Wait for 100mS for motor start
-		call	timer1.6s	    ;Start the timer, monitor sensflags bit 1
+		call	timer2s		    ;Start the timer, monitor sensflags bit 1
 startvend1:	call	senserd		    ;Read optic sensor
 		btfsc	sensflags,0	    ;Bit 0 = 1 when beam is broken
 		bra	vendend
@@ -505,8 +505,8 @@ vendend1:	tstfsz	credit
 		clrf	togd
 		return
 
-refund:		btfsc	venderrpv,4	    ;If bit 4 is set hopper error
-		return
+		btfsc	venderrpv,4	    ;If bit 4 is set hopper error
+refund:		return
 ;		btfsc	vendflags,1	    ;Bit 1 set = error vend 100% refund
 		bra	refundall
 		clrf	vendflags	    ;Reset vendflags
@@ -916,6 +916,7 @@ setp1:		movlw	price1
 setprice:	movwf	EEADR
 		call	eeread
 		movff	EEDATA,vendcost
+		
 		call	delay.2s
 		call	displayprice
 setprice1:	call	butin
@@ -1111,6 +1112,7 @@ notein:		btfsc	PORTA, 5	    ;If it's not low then there's problem
 notein1:	btfss	PORTA, 5	    ;Loop while credit in is low
 		bra	notein1
 		call	timernote	    ;Set 150mS timer and disable coins.
+		bsf	PORTC,6
 		movlw	0x0A		    ;Note reader gives R10 pulses
 		addwf	credit		    ;Increment credit store.
 		addwf	coinsinpv
@@ -1124,6 +1126,7 @@ notein2:	addwf	coinsinvpv
 notein3:	bsf	vendflags,4	    ;Display credit
 		bcf	vendflags,3	    ;Don't display no change
 		clrf	togd
+		bcf	PORTC,6
 notein4:	btfss	PORTA, 5
 		goto	notein
 		btfss	INTCON,2	    ;If bit 2 = 1 timer finished
