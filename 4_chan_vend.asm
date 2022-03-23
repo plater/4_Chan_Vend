@@ -1332,10 +1332,11 @@ sensorblk:	bcf	PORTC,7		    ;Turn off coin & note reader
 		return
 
 senserd:	call	getsensor	    ;Read sensor and set or unset sensor bit
-		movlw	0xFF		    ;sensor interupted is < FE
+		movlw	0x06		    ;sensor interupted is < FE
 		bsf	sensflags,0	    ;Sensor is interupted or wire is broken
-		cpfseq	sensor		    ;Sensor interupted if equal
+		cpfsgt	sensor		    ;Sensor interupted if equal
 		bcf	sensflags,0	    ;Sensor is on and not interrupted
+		MOVFF	sensor, WREG
 		return
 
 getsensor:	bsf     ADCON0,GO	    ;Start A/D conversion
@@ -1854,7 +1855,7 @@ timer1.6s:	movlw	sec1.6		    ;1600mSec preset.
 		movwf	TMR0L
 		goto	settimer
 
-timer2s:	movlw	0x80		    ;1048mSec preset.
+timer2s:	movlw	0x40		    ;1048mSec preset.
 		movwf	TMR0H
 		movlw	0X00
 		movwf	TMR0L
